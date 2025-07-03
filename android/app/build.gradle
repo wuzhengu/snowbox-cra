@@ -1,0 +1,94 @@
+apply plugin: "com.android.application"
+
+project.ext.react = [
+    enableHermes: false,  // clean and rebuild if changing
+]
+
+apply from: "$node_modules/react-native/react.gradle"
+
+def jscFlavor = 'org.webkit:android-jsc:+'
+def enableHermes = project.ext.react.get("enableHermes", false);
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.example.snowbox"
+
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion rootProject.ext.minSdkVersion
+
+        versionCode 1
+        versionName "1.0"
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyPassword 'android'
+            keyAlias 'androiddebugkey'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
+
+    implementation "com.facebook.react:react-native:+"
+
+    debugImplementation("com.facebook.flipper:flipper:0.93.0") {
+      exclude group:'com.facebook.fbjni'
+    }
+
+    debugImplementation("com.facebook.flipper:flipper-network-plugin:0.93.0") {
+        exclude group:'com.facebook.flipper'
+        exclude group:'com.squareup.okhttp3', module:'okhttp'
+    }
+
+    debugImplementation("com.facebook.flipper:flipper-fresco-plugin:0.93.0") {
+        exclude group:'com.facebook.flipper'
+    }
+
+    if (enableHermes) {
+        debugImplementation files("$node_modules/hermes-engine/android/hermes-debug.aar")
+        releaseImplementation files("$node_modules/hermes-engine/android/hermes-release.aar")
+    } else {
+        implementation jscFlavor
+    }
+}
+
+apply from: file("$node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
+applyNativeModulesAppBuildGradle(project)
+
+afterEvaluate {
+    def copyReleaseBundledJs = tasks.copyReleaseBundledJs
+    def bundleReleaseJsAndAssets = tasks.bundleReleaseJsAndAssets
+
+    copyReleaseBundledJs.mustRunAfter bundleReleaseJsAndAssets
+    copyReleaseBundledJs.mustRunAfter tasks.processReleaseManifestForPackage
+    tasks.compressReleaseAssets.mustRunAfter copyReleaseBundledJs
+    tasks.sdkReleaseDependencyData.mustRunAfter copyReleaseBundledJs
+    tasks.mergeReleaseNativeLibs.mustRunAfter copyReleaseBundledJs
+    tasks.mergeReleaseJavaResource.mustRunAfter copyReleaseBundledJs
+    tasks.mergeExtDexRelease.mustRunAfter copyReleaseBundledJs
+
+    rootProject.subprojects { subproject ->
+        if (subproject.name == 'app') return
+        bundleReleaseJsAndAssets.mustRunAfter subproject.tasks
+    }
+}
