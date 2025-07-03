@@ -18,3 +18,7 @@ dist
 **/*.umi-test
 **/*.env.local
 **/*docs-dist
+
+/build
+
+package-lock.json
